@@ -1,0 +1,7 @@
+/Users/chiyuchan/CascadeProjects/master-slave-replication/src/main/java/com/replication/system/ReplicationSystem.java
+/Users/chiyuchan/CascadeProjects/master-slave-replication/src/main/java/com/replication/node/SlaveNode.java
+/Users/chiyuchan/CascadeProjects/master-slave-replication/src/main/java/com/replication/node/AbstractNode.java
+/Users/chiyuchan/CascadeProjects/master-slave-replication/src/main/java/com/replication/node/Node.java
+/Users/chiyuchan/CascadeProjects/master-slave-replication/src/main/java/com/replication/model/LogEntry.java
+/Users/chiyuchan/CascadeProjects/master-slave-replication/src/main/java/com/replication/Main.java
+/Users/chiyuchan/CascadeProjects/master-slave-replication/src/main/java/com/replication/node/MasterNode.java
