@@ -2,6 +2,9 @@ package com.replication.node;
 
 import com.replication.model.LogEntry;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Implementation of a slave node in the replication system.
  * Slave nodes receive and apply log entries from the master,
@@ -28,7 +31,7 @@ public class SlaveNode extends AbstractNode {
         }
 
         System.out.println("Slave " + id + " requesting recovery from master");
-        master.recoverSlave(this);
+        recoverSlave();
     }
 
     @Override
@@ -36,5 +39,32 @@ public class SlaveNode extends AbstractNode {
         super.goUp();
         // When coming back up, request recovery from the master
         requestRecovery();
+    }
+
+    /**
+     * Recovers a slave node by sending it all missing log entries.
+     */
+    public void recoverSlave() {
+        if (!up || !this.isUp()) {
+            System.out.println("Master " + id + " or Slave " + this.getId() + " is DOWN, cannot recover");
+            return;
+        }
+
+        System.out.println("Master " + id + " starting recovery for slave " + this.getId());
+
+        CompletableFuture.runAsync(() -> {
+            long slaveLastIndex = this.getLastLogIndex();
+            List<LogEntry> missingEntries = getLogEntriesAfter(slaveLastIndex);
+
+            System.out.println("Master " + id + " sending " + missingEntries.size() +
+                    " log entries to slave " + this.getId());
+
+            for (LogEntry entry : missingEntries) {
+                this.applyLogEntry(entry, master.lock);
+            }
+
+            System.out.println("Master " + id + " completed recovery for slave " +
+                    this.getId() + " up to log index " + lastAppliedIndex);
+        }, replicationExecutor);
     }
 }

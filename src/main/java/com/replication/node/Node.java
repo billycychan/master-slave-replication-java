@@ -4,6 +4,7 @@ import com.replication.model.LogEntry;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * Interface representing a node in the replication system.
@@ -56,7 +57,7 @@ public interface Node {
      * @param entry the log entry to apply
      * @return true if applied successfully
      */
-    boolean applyLogEntry(LogEntry entry);
+    boolean applyLogEntry(LogEntry entry, ReadWriteLock lock);
     
     /**
      * Gets all log entries after the specified index.

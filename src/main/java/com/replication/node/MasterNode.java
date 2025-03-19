@@ -15,14 +15,12 @@ import java.util.concurrent.Executors;
  */
 public class MasterNode extends AbstractNode {
     private final Set<SlaveNode> slaves;
-    private final ExecutorService replicationExecutor;
     private final Map<Long, Set<String>> pendingReplications;
     private long nextLogId = 1;
 
     public MasterNode(String id) {
         super(id);
         this.slaves = ConcurrentHashMap.newKeySet();
-        this.replicationExecutor = Executors.newFixedThreadPool(5);
         this.pendingReplications = new ConcurrentHashMap<>();
     }
 
@@ -80,7 +78,7 @@ public class MasterNode extends AbstractNode {
         for (SlaveNode slave : slaves) {
             CompletableFuture.runAsync(() -> {
                 if (slave.isUp()) {
-                    boolean success = slave.applyLogEntry(entry);
+                    boolean success = slave.applyLogEntry(entry, lock);
                     if (success) {
                         // Track successful replication
                         Set<String> slaveSet = pendingReplications.get(entry.getId());
@@ -89,6 +87,8 @@ public class MasterNode extends AbstractNode {
                             System.out.println("Master " + id + " replicated log entry " + entry.getId() + 
                                     " to slave " + slave.getId());
                         }
+                    } else {
+                        slave.recoverSlave();
                     }
                 } else {
                     System.out.println("Master " + id + " couldn't replicate to slave " + 
@@ -96,34 +96,6 @@ public class MasterNode extends AbstractNode {
                 }
             }, replicationExecutor);
         }
-    }
-
-    /**
-     * Recovers a slave node by sending it all missing log entries.
-     * @param slave the slave node to recover
-     */
-    public void recoverSlave(SlaveNode slave) {
-        if (!up || !slave.isUp()) {
-            System.out.println("Master " + id + " or Slave " + slave.getId() + " is DOWN, cannot recover");
-            return;
-        }
-
-        System.out.println("Master " + id + " starting recovery for slave " + slave.getId());
-        
-        CompletableFuture.runAsync(() -> {
-            long slaveLastIndex = slave.getLastLogIndex();
-            List<LogEntry> missingEntries = getLogEntriesAfter(slaveLastIndex);
-            
-            System.out.println("Master " + id + " sending " + missingEntries.size() + 
-                    " log entries to slave " + slave.getId());
-            
-            for (LogEntry entry : missingEntries) {
-                slave.applyLogEntry(entry);
-            }
-            
-            System.out.println("Master " + id + " completed recovery for slave " + 
-                    slave.getId() + " up to log index " + lastAppliedIndex);
-        }, replicationExecutor);
     }
 
     /**

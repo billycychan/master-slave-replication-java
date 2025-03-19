@@ -5,6 +5,9 @@ import com.replication.model.LogEntry;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -19,12 +22,14 @@ public abstract class AbstractNode implements Node {
     protected final List<LogEntry> log;
     protected final ReadWriteLock lock;
     protected long lastAppliedIndex = 0;
+    protected final ExecutorService replicationExecutor;
 
     public AbstractNode(String id) {
         this.id = id;
         this.dataStore = new ConcurrentHashMap<>();
         this.log = new CopyOnWriteArrayList<>();
         this.lock = new ReentrantReadWriteLock();
+        this.replicationExecutor = Executors.newFixedThreadPool(5);
     }
 
     @Override
@@ -88,7 +93,7 @@ public abstract class AbstractNode implements Node {
     }
 
     @Override
-    public boolean applyLogEntry(LogEntry entry) {
+    public boolean applyLogEntry(LogEntry entry, ReadWriteLock lock) {
         if (!up) {
             System.out.println("Node " + id + " is DOWN, cannot apply log entry");
             return false;

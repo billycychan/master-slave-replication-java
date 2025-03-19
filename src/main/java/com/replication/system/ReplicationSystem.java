@@ -124,14 +124,6 @@ public class ReplicationSystem {
      * @param recoveryProbability the probability of a failed node recovering
      */
     private void simulateFailureAndRecovery(double failureProbability, double recoveryProbability) {
-        // Check master
-        if (master.isUp() && random.nextDouble() < failureProbability) {
-            master.goDown();
-        } else if (!master.isUp() && random.nextDouble() < recoveryProbability) {
-            master.goUp();
-        }
-        
-        // Check slaves
         for (SlaveNode slave : slaves) {
             if (slave.isUp() && random.nextDouble() < failureProbability) {
                 slave.goDown();
