@@ -210,7 +210,7 @@ flowchart TD
         M -- "write()" --> M_DS[(Master DataStore)]
         M -- "applyLogEntry(entry, lock)" --> S1
         M -- "applyLogEntry(entry, lock)" --> S2
-        M -- "applyLogEntry()" --> S3
+        M -- "applyLogEntry(entry, lock)" --> S3
         
         S1 -- "read()" --> S1_DS[(Slave1 DataStore)]
         S2 -- "read()" --> S2_DS[(Slave2 DataStore)]
