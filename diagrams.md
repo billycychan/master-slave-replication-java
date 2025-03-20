@@ -13,7 +13,7 @@ classDiagram
         +String read(String key)
         +Map~String, String~ getDataStore()
         +long getLastLogIndex()
-        +boolean applyLogEntry(LogEntry entry)
+        +boolean applyLogEntry(LogEntry entry, ReadWriteLock lock)
         +List~LogEntry~ getLogEntriesAfter(long afterIndex)
     }
 
@@ -24,24 +24,24 @@ classDiagram
         #List~LogEntry~ log
         #ReadWriteLock lock
         #long lastAppliedIndex
+        #ExecutorService replicationExecutor
         +AbstractNode(String id)
     }
 
     class MasterNode {
         -Set~SlaveNode~ slaves
-        -ExecutorService replicationExecutor
         -Map~Long, Set~String~~ pendingReplications
         -long nextLogId
         +void registerSlave(SlaveNode slave)
         +boolean write(String key, String value)
         -void replicateToSlaves(LogEntry entry)
-        +void recoverSlave(SlaveNode slave)
         +void shutdown()
     }
 
     class SlaveNode {
         -MasterNode master
         +void requestRecovery()
+        +void recoverSlave()
     }
 
     class LogEntry {
@@ -95,17 +95,26 @@ sequenceDiagram
     MasterNode->>MasterNode: Add to log
     
     par Asynchronous Replication
-        MasterNode-->>SlaveNode1: applyLogEntry(entry)
-        Note over SlaveNode1: If up, apply entry
+        MasterNode-->>SlaveNode1: applyLogEntry(entry, lock)
+        Note over SlaveNode1: If up, apply entry with lock
         SlaveNode1-->>MasterNode: Replication result
+        alt Replication Failed
+            MasterNode-->>SlaveNode1: recoverSlave()
+        end
 
-        MasterNode-->>SlaveNode2: applyLogEntry(entry)
-        Note over SlaveNode2: If up, apply entry
+        MasterNode-->>SlaveNode2: applyLogEntry(entry, lock)
+        Note over SlaveNode2: If up, apply entry with lock
         SlaveNode2-->>MasterNode: Replication result
+        alt Replication Failed
+            MasterNode-->>SlaveNode2: recoverSlave()
+        end
 
-        MasterNode-->>SlaveNode3: applyLogEntry(entry)
-        Note over SlaveNode3: If up, apply entry
+        MasterNode-->>SlaveNode3: applyLogEntry(entry, lock)
+        Note over SlaveNode3: If up, apply entry with lock
         SlaveNode3-->>MasterNode: Replication result
+        alt Replication Failed
+            MasterNode-->>SlaveNode3: recoverSlave()
+        end
     end
     
     MasterNode->>ReplicationSystem: Return success
@@ -145,13 +154,15 @@ sequenceDiagram
     Note over SlaveNode: Node was DOWN
     FailureSimulator->>SlaveNode: goUp()
     SlaveNode->>SlaveNode: Set state to UP
-    SlaveNode->>MasterNode: requestRecovery()
+    SlaveNode->>SlaveNode: recoverSlave()
     
-    MasterNode->>MasterNode: Get slave's lastLogIndex
-    MasterNode->>MasterNode: Find all log entries after lastLogIndex
+    Note over SlaveNode: Using replicationExecutor
+    SlaveNode->>SlaveNode: Get lastLogIndex
+    SlaveNode->>MasterNode: Get log entries after lastLogIndex
     
     loop For each missing LogEntry
-        MasterNode->>SlaveNode: applyLogEntry(entry)
+        SlaveNode->>SlaveNode: applyLogEntry(entry, lock)
+        Note over SlaveNode: Thread-safe application with lock
         SlaveNode->>SlaveNode: Apply to dataStore
         SlaveNode->>SlaveNode: Update lastAppliedIndex
     end
@@ -197,8 +208,8 @@ flowchart TD
         RS --> S3[SlaveNode 3]
         
         M -- "write()" --> M_DS[(Master DataStore)]
-        M -- "applyLogEntry()" --> S1
-        M -- "applyLogEntry()" --> S2
+        M -- "applyLogEntry(entry, lock)" --> S1
+        M -- "applyLogEntry(entry, lock)" --> S2
         M -- "applyLogEntry()" --> S3
         
         S1 -- "read()" --> S1_DS[(Slave1 DataStore)]
