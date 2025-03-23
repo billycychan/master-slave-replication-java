@@ -1,5 +1,74 @@
 # Master-Slave Replication System Diagrams
 
+
+## Analysis Class Diagram
+
+```mermaid
+classDiagram
+    %% Base class at the top
+    class Node {
+        id
+        status
+        dataStore
+        log
+        changeStatus()
+        readData(key)
+        getDataStore()
+        getLogInformation()
+        processLogEntry(entry)
+    }
+    
+    %% Specialized nodes side by side
+    class Master {
+        slaves
+        pendingReplications
+        registerSlave(slave)
+        write(key, value)
+        replicateData(entry)
+    }
+    
+    class Slave {
+        master
+        requestRecovery()
+        recover()
+    }
+    
+    %% Supporting entity
+    class LogEntry {
+        id
+        key
+        value
+        timestamp
+    }
+    
+    %% System container at the bottom
+    class ReplicationSystem {
+        master
+        slaves
+        write(key, value)
+        read(key)
+        getAvailableSlave()
+        monitorSystem()
+    }
+    
+    %% Inheritance relationships
+    Node <|-- Master
+    Node <|-- Slave
+    
+    %% Master-Slave relationship
+    Master "1" -- "many" Slave : manages
+    
+    %% LogEntry relationships
+    Master -- LogEntry : creates
+    
+    %% Reference relationship
+    Slave -- Master : connects to
+    
+    %% System composition relationships
+    ReplicationSystem -- Master : contains
+    ReplicationSystem -- Slave : contains
+```
+
 ## System Architecture
 
 ```mermaid
