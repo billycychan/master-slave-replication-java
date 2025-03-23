@@ -175,23 +175,14 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> SystemRunning
-    
+
     state SystemRunning {
         [*] --> AllNodesUp
-        
+
         AllNodesUp --> SomeSlavesDown: Slave failure
-        AllNodesUp --> MasterDown: Master failure
-        
         SomeSlavesDown --> AllNodesUp: Slave recovery
-        SomeSlavesDown --> MasterDown: Master failure
-        
-        MasterDown --> AllNodesUp: Master recovery
-        MasterDown --> MasterAndSlavesDown: Slave failure
-        
-        MasterAndSlavesDown --> MasterDown: Slave recovery
-        MasterAndSlavesDown --> SomeSlavesDown: Master recovery
     }
-    
+
     SystemRunning --> [*]: shutdown()
 ```
 
