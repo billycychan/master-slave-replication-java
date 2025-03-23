@@ -30,7 +30,8 @@ public class Main {
             system.shutdown();
         }
     }
-    
+
+    // TODO: 2025/3/18 add unit test 
     private static void demoSystem(ReplicationSystem system) throws InterruptedException {
         // Initialize with some data
         System.out.println("\n--- Initializing data ---");
