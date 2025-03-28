@@ -13,6 +13,7 @@ classDiagram
         log
         changeStatus()
         readData(key)
+        deleteData(key)
         getDataStore()
         getLogInformation()
         processLogEntry(entry)
@@ -24,6 +25,7 @@ classDiagram
         pendingReplications
         registerSlave(slave)
         write(key, value)
+        delete(key)
         replicateData(entry)
     }
     
@@ -47,6 +49,7 @@ classDiagram
         slaves
         write(key, value)
         read(key)
+        delete(key)
         getAvailableSlave()
         monitorSystem()
     }
@@ -91,13 +94,22 @@ stateDiagram-v2
             state MasterNodeState {
                 direction TB
                 [*] --> Master_Idle
-                Master_Idle --> Master_Processing: write() called
-                Master_Processing --> Master_Idle: Replication Complete
+                Master_Idle --> Master_Processing_Write: write() called
+                Master_Idle --> Master_Processing_Delete: delete() called
+                Master_Processing_Write --> Master_Idle: Write Replication Complete
+                Master_Processing_Delete --> Master_Idle: Delete Replication Complete
                 
-                state Master_Processing {
-                    [*] --> Master_CreatingLogEntry
-                    Master_CreatingLogEntry --> Master_UpdatingLocalStore
+                state Master_Processing_Write {
+                    [*] --> Master_CreatingWriteLogEntry
+                    Master_CreatingWriteLogEntry --> Master_UpdatingLocalStore
                     Master_UpdatingLocalStore --> Master_Replicating
+                    Master_Replicating --> [*]
+                }
+                
+                state Master_Processing_Delete {
+                    [*] --> Master_CreatingDeleteLogEntry
+                    Master_CreatingDeleteLogEntry --> Master_RemovingFromLocalStore
+                    Master_RemovingFromLocalStore --> Master_Replicating
                     Master_Replicating --> [*]
                 }
             }
@@ -112,8 +124,11 @@ stateDiagram-v2
                     
                     Slaves_Idle --> Slaves_ReceivingLogEntry: applyLogEntry()
                     Slaves_ReceivingLogEntry --> Slaves_ApplyingLogEntry
-                    Slaves_ApplyingLogEntry --> Slaves_StoringData
+                    Slaves_ApplyingLogEntry --> Slaves_CheckingOperationType
+                    Slaves_CheckingOperationType --> Slaves_StoringData: Write Operation
+                    Slaves_CheckingOperationType --> Slaves_DeletingData: Delete Operation
                     Slaves_StoringData --> Slaves_Idle
+                    Slaves_DeletingData --> Slaves_Idle
                 }
             }
             
@@ -121,9 +136,11 @@ stateDiagram-v2
                 direction TB
                 [*] --> System_Idle
                 System_Idle --> System_Write: write() requested
-                System_Write --> System_Read: read() requested
+                System_Idle --> System_Delete: delete() requested
+                System_Idle --> System_Read: read() requested
                 System_Read --> System_Idle
                 System_Write --> System_Idle
+                System_Delete --> System_Idle
             }
             
             MasterNodeState --> AllSlaveNodesState: Replication
@@ -138,7 +155,9 @@ stateDiagram-v2
                 direction TB
                 [*] --> MasterLimitedOps
                 MasterLimitedOps --> MasterWrite: write() called
+                MasterLimitedOps --> MasterDelete: delete() called
                 MasterWrite --> MasterReplicatePartial
+                MasterDelete --> MasterReplicatePartial
                 MasterReplicatePartial --> MasterLimitedOps
             }
             
@@ -163,7 +182,9 @@ stateDiagram-v2
                 LimitedOperations --> FailoverReads: read()
                 FailoverReads --> LimitedOperations
                 LimitedOperations --> PartialWrite: write()
+                LimitedOperations --> PartialDelete: delete()
                 PartialWrite --> LimitedOperations
+                PartialDelete --> LimitedOperations
             }
             
             MasterWithSlavesDown --> SlaveNodesWithFailures: Partial Replication
@@ -189,6 +210,7 @@ classDiagram
         +void goDown()
         +void goUp()
         +String read(String key)
+        +boolean delete(String key)
         +Map~String, String~ getDataStore()
         +long getLastLogIndex()
         +boolean applyLogEntry(LogEntry entry, ReadWriteLock lock)
@@ -212,6 +234,7 @@ classDiagram
         -long nextLogId
         +void registerSlave(SlaveNode slave)
         +boolean write(String key, String value)
+        +boolean delete(String key)
         -void replicateToSlaves(LogEntry entry)
         +void shutdown()
     }
@@ -226,9 +249,18 @@ classDiagram
         -long id
         -String key
         -String value
+        -OperationType operationType
         -long timestamp
         +LogEntry(long id, String key, String value)
+        +LogEntry(long id, String key, String value, OperationType operationType)
         +getters()
+        +boolean isDelete()
+    }
+    
+    class OperationType {
+        <<enumeration>>
+        WRITE
+        DELETE
     }
 
     class ReplicationSystem {
@@ -237,6 +269,7 @@ classDiagram
         -Random random
         -ScheduledExecutorService scheduler
         +boolean write(String key, String value)
+        +boolean delete(String key)
         +String read(String key)
         -SlaveNode getRandomUpSlave()
         +void startFailureSimulator(double failureProbability, double recoveryProbability, int checkIntervalSeconds)
@@ -249,6 +282,7 @@ classDiagram
     AbstractNode <|-- SlaveNode
     MasterNode "1" -- "many" SlaveNode : manages
     MasterNode -- LogEntry : creates
+    LogEntry -- OperationType : uses
     SlaveNode -- MasterNode : references
     ReplicationSystem -- MasterNode : contains
     ReplicationSystem -- SlaveNode : contains
@@ -268,7 +302,7 @@ sequenceDiagram
     Client->>ReplicationSystem: write(key, value)
     ReplicationSystem->>MasterNode: write(key, value)
     
-    Note over MasterNode: Create LogEntry with ID
+    Note over MasterNode: Create LogEntry with ID and WRITE operation type
     MasterNode->>MasterNode: Apply to local dataStore
     MasterNode->>MasterNode: Add to log
     
@@ -297,6 +331,57 @@ sequenceDiagram
     
     MasterNode->>ReplicationSystem: Return success
     ReplicationSystem->>Client: Return result
+```
+
+## Delete Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant ReplicationSystem
+    participant MasterNode
+    participant SlaveNode1
+    participant SlaveNode2
+    participant SlaveNode3
+
+    Client->>ReplicationSystem: delete(key)
+    ReplicationSystem->>MasterNode: delete(key)
+    
+    Note over MasterNode: Check if key exists
+    alt Key exists
+        Note over MasterNode: Create LogEntry with ID and DELETE operation type
+        MasterNode->>MasterNode: Remove from local dataStore
+        MasterNode->>MasterNode: Add to log
+        
+        par Asynchronous Replication
+            MasterNode-->>SlaveNode1: applyLogEntry(entry, lock)
+            Note over SlaveNode1: If up, apply delete with lock
+            SlaveNode1-->>MasterNode: Replication result
+            alt Replication Failed
+                MasterNode-->>SlaveNode1: recoverSlave()
+            end
+
+            MasterNode-->>SlaveNode2: applyLogEntry(entry, lock)
+            Note over SlaveNode2: If up, apply delete with lock
+            SlaveNode2-->>MasterNode: Replication result
+            alt Replication Failed
+                MasterNode-->>SlaveNode2: recoverSlave()
+            end
+
+            MasterNode-->>SlaveNode3: applyLogEntry(entry, lock)
+            Note over SlaveNode3: If up, apply delete with lock
+            SlaveNode3-->>MasterNode: Replication result
+            alt Replication Failed
+                MasterNode-->>SlaveNode3: recoverSlave()
+            end
+        end
+        
+        MasterNode->>ReplicationSystem: Return success
+        ReplicationSystem->>Client: Return true
+    else Key does not exist
+        MasterNode->>ReplicationSystem: Return failure
+        ReplicationSystem->>Client: Return false
+    end
 ```
 
 ## Read Flow
