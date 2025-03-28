@@ -68,6 +68,31 @@ public abstract class AbstractNode implements Node {
             lock.readLock().unlock();
         }
     }
+    
+    @Override
+    public boolean delete(String key) {
+        if (!up) {
+            System.out.println("Node " + id + " is DOWN, cannot delete");
+            return false;
+        }
+        
+        try {
+            lock.writeLock().lock();
+            
+            // Check if the key exists before attempting to delete
+            if (!dataStore.containsKey(key)) {
+                System.out.println("Node " + id + " could not delete key '" + key + "' (not found)");
+                return false;
+            }
+            
+            // Remove the key from the data store
+            dataStore.remove(key);
+            System.out.println("Node " + id + " deleted key '" + key + "'");
+            return true;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
 
     @Override
     public Map<String, String> getDataStore() {
@@ -109,8 +134,16 @@ public abstract class AbstractNode implements Node {
                 return false;
             }
             
-            // Apply the log entry to the data store
-            dataStore.put(entry.getKey(), entry.getValue());
+            // Apply the log entry to the data store based on operation type
+            if (entry.isDelete()) {
+                // For delete operations, remove the key from the data store
+                dataStore.remove(entry.getKey());
+                System.out.println("Node " + id + " deleted key '" + entry.getKey() + "' from log entry");
+            } else {
+                // For write operations, put the key-value pair in the data store
+                dataStore.put(entry.getKey(), entry.getValue());
+                System.out.println("Node " + id + " wrote " + entry.getKey() + "=" + entry.getValue() + " from log entry");
+            }
             
             // Add to log and update index
             log.add(entry);

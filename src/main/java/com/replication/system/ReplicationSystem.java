@@ -50,6 +50,15 @@ public class ReplicationSystem {
     public boolean write(String key, String value) {
         return master.write(key, value);
     }
+    
+    /**
+     * Deletes a key-value pair from the master.
+     * @param key the key to delete
+     * @return true if the delete was successful
+     */
+    public boolean delete(String key) {
+        return master.delete(key);
+    }
 
     /**
      * Reads a value from a random slave node.
