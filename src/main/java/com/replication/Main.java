@@ -1,7 +1,10 @@
 package com.replication;
 
+import com.replication.model.LogEntry;
 import com.replication.system.ReplicationSystem;
 
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
@@ -20,15 +23,16 @@ public class Main {
         // 10% chance of failure, 30% chance of recovery per 5 seconds
         system.startFailureSimulator(0.1, 0.3, 5);
         
-        // Demo the system
-        try {
-            demoSystem(system);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            // Shutdown the system properly
-            system.shutdown();
-        }
+        // // Demo the system
+        // try {
+        //     demoSystem(system);
+        // } catch (InterruptedException e) {
+        //     e.printStackTrace();
+        // } finally {
+        //     // Shutdown the system properly
+        //     system.shutdown();
+        // }
+        interactiveMode(system);
     }
 
     // TODO: 2025/3/18 add unit test 
@@ -83,6 +87,21 @@ public class Main {
             TimeUnit.MILLISECONDS.sleep(500);
         }
         
+        // Demonstrate delete operation
+        System.out.println("\n--- Demonstrating delete operation ---");
+        system.delete("key2");
+        system.delete("key4");
+        TimeUnit.SECONDS.sleep(2); // Wait for replication
+        
+        // Read after delete
+        System.out.println("\n--- Reading after deletes ---");
+        for (int i = 0; i < 5; i++) {
+            String key = "key" + ((i % 5) + 1);
+            String value = system.read(key);
+            System.out.println("Key: " + key + ", Value: " + (value != null ? value : "<deleted>"));
+            TimeUnit.MILLISECONDS.sleep(500);
+        }
+        
         // Demonstrate failures and recovery
         System.out.println("\n--- Demonstrating failures and recovery (wait 30 seconds) ---");
         System.out.println("    Watch as nodes go down and come back up!");
@@ -103,7 +122,7 @@ public class Main {
         String input;
         
         System.out.println("\n--- Interactive Mode ---");
-        System.out.println("Commands: write <key> <value> | read <key> | show | exit");
+        System.out.println("Commands: write <key> <value> | read <key> | delete <key> | show | logs | status | exit");
         
         while (true) {
             System.out.print("> ");
@@ -114,13 +133,45 @@ public class Main {
             } else if (input.equals("show")) {
                 Map<String, String> dataStore = system.getDataStore();
                 if (dataStore != null) {
-                    dataStore.forEach((k, v) -> System.out.println(k + " = " + v));
+                    System.out.println("\n--- Current Data Store ---");
+                    if (dataStore.isEmpty()) {
+                        System.out.println("(empty)");
+                    } else {
+                        dataStore.forEach((k, v) -> System.out.println(k + " = " + v));
+                    }
                 }
+            } else if (input.equals("logs")) {
+                List<LogEntry> logs = system.getLogs();
+                System.out.println("\n--- Replication Log Entries ---");
+                if (logs.isEmpty()) {
+                    System.out.println("(no log entries)");
+                } else {
+                    for (LogEntry entry : logs) {
+                        String operationStr = entry.isDelete() ? "DELETE" : "WRITE";
+                        System.out.println("Log #" + entry.getId() + ": " + operationStr + 
+                                " key='" + entry.getKey() + "'" + 
+                                (entry.isDelete() ? "" : " value='" + entry.getValue() + "'") + 
+                                " (" + new Date(entry.getTimestamp()) + ")");
+                    }
+                }
+            } else if (input.equals("status")) {
+                Map<String, Boolean> nodeStatus = system.getNodesStatus();
+                System.out.println("\n--- Node Status ---");
+                nodeStatus.forEach((nodeId, isUp) -> 
+                        System.out.println(nodeId + ": " + (isUp ? "UP" : "DOWN")));
             } else if (input.startsWith("read ")) {
                 String key = input.substring(5).trim();
                 String value = system.read(key);
                 if (value == null) {
                     System.out.println("Key not found or all slaves are down");
+                }
+            } else if (input.startsWith("delete ")) {
+                String key = input.substring(7).trim();
+                boolean success = system.delete(key);
+                if (success) {
+                    System.out.println("Delete successful");
+                } else {
+                    System.out.println("Delete failed (key not found or master down)");
                 }
             } else if (input.startsWith("write ")) {
                 String[] parts = input.substring(6).trim().split("\\s+", 2);
@@ -135,10 +186,11 @@ public class Main {
                     System.out.println("Usage: write <key> <value>");
                 }
             } else {
-                System.out.println("Unknown command. Use write, read, show, or exit");
+                System.out.println("Unknown command. Use write, read, delete, show, logs, status, or exit");
             }
         }
-        
+
         scanner.close();
+        system.shutdown();
     }
 }

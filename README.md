@@ -15,11 +15,12 @@ The system consists of the following components:
 
 ## Features
 
-- **Asynchronous Replication**: Write operations are applied to the master immediately and then asynchronously replicated to slaves.
+- **Asynchronous Replication**: Write and delete operations are applied to the master immediately and then asynchronously replicated to slaves.
 - **Fault Tolerance**: The system can handle node failures and recoveries.
-- **Read-Write Separation**: Reads are distributed across slaves, while writes go to the master.
+- **Read-Write Separation**: Reads are distributed across slaves, while writes and deletes go to the master.
 - **Log-Based Recovery**: When a slave comes back up, it recovers its state using the master's log.
 - **Failure Simulation**: The system includes a failure simulator to demonstrate fault tolerance.
+- **CRUD Operations**: Support for Create (write), Read, Update (write), and Delete operations.
 
 ## Data Structure
 
@@ -29,7 +30,8 @@ The system uses Java's `Map<String, String>` as the underlying data structure fo
 
 Each log entry includes:
 - Log ID (monotonically increasing)
-- Key and value of the data being updated
+- Key and value of the data being operated on
+- Operation type (WRITE or DELETE)
 - Timestamp
 
 ## Building and Running
@@ -50,12 +52,12 @@ docker run master-slave-replication
 
 ## How It Works
 
-1. Write operations are sent to the master node.
-2. The master creates a log entry and applies it to its local data store.
+1. Write and delete operations are sent to the master node.
+2. The master creates a log entry with the appropriate operation type and applies it to its local data store.
 3. The log entry is asynchronously replicated to all slave nodes.
 4. Read operations are randomly distributed across available slave nodes.
 5. When a node fails, it's marked as down and excluded from operations.
-6. When a node recovers, it requests missing log entries from the master.
+6. When a node recovers, it requests missing log entries from the master and applies them according to their operation type.
 
 ## Fault Tolerance
 
@@ -68,9 +70,16 @@ The system implements fault tolerance through:
 
 The `Main` class includes a demonstration that:
 1. Initializes the system with sample data
-2. Performs reads and writes
+2. Performs reads, writes, and deletes
 3. Simulates node failures and recoveries
 4. Shows the final state of the data store
+
+The system also provides an interactive mode where you can manually:
+- Write data: `write <key> <value>`
+- Read data: `read <key>`
+- Delete data: `delete <key>`
+- Show all data: `show`
+- Exit: `exit`
 
 ## Implementation Notes
 

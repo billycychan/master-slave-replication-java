@@ -41,6 +41,13 @@ public interface Node {
     String read(String key);
     
     /**
+     * Deletes a key-value pair from the node's data store.
+     * @param key the key to delete
+     * @return true if the key was found and deleted, false otherwise
+     */
+    boolean delete(String key);
+    
+    /**
      * Gets a copy of the entire data store.
      * @return a copy of the data store
      */
