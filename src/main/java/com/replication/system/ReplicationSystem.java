@@ -4,6 +4,8 @@ import com.replication.node.MasterNode;
 import com.replication.node.SlaveNode;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -142,6 +144,37 @@ public class ReplicationSystem {
         }
     }
 
+    /**
+     * Gets all log entries from the master node.
+     * @return a list of all log entries from the master
+     */
+    public List<com.replication.model.LogEntry> getLogs() {
+        if (!master.isUp()) {
+            System.out.println("Master is DOWN, cannot get logs");
+            return Collections.emptyList();
+        }
+        
+        return master.getLogEntriesAfter(0); // Get all logs from the beginning
+    }
+    
+    /**
+     * Gets the status of all nodes in the system.
+     * @return a map of node IDs to their status (UP/DOWN)
+     */
+    public Map<String, Boolean> getNodesStatus() {
+        Map<String, Boolean> status = new HashMap<>();
+        
+        // Add master status
+        status.put(master.getId(), master.isUp());
+        
+        // Add slave statuses
+        for (SlaveNode slave : slaves) {
+            status.put(slave.getId(), slave.isUp());
+        }
+        
+        return status;
+    }
+    
     /**
      * Shuts down the replication system.
      */

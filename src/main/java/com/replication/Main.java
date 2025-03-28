@@ -1,7 +1,10 @@
 package com.replication;
 
+import com.replication.model.LogEntry;
 import com.replication.system.ReplicationSystem;
 
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
@@ -119,7 +122,7 @@ public class Main {
         String input;
         
         System.out.println("\n--- Interactive Mode ---");
-        System.out.println("Commands: write <key> <value> | read <key> | delete <key> | show | exit");
+        System.out.println("Commands: write <key> <value> | read <key> | delete <key> | show | logs | status | exit");
         
         while (true) {
             System.out.print("> ");
@@ -130,8 +133,32 @@ public class Main {
             } else if (input.equals("show")) {
                 Map<String, String> dataStore = system.getDataStore();
                 if (dataStore != null) {
-                    dataStore.forEach((k, v) -> System.out.println(k + " = " + v));
+                    System.out.println("\n--- Current Data Store ---");
+                    if (dataStore.isEmpty()) {
+                        System.out.println("(empty)");
+                    } else {
+                        dataStore.forEach((k, v) -> System.out.println(k + " = " + v));
+                    }
                 }
+            } else if (input.equals("logs")) {
+                List<LogEntry> logs = system.getLogs();
+                System.out.println("\n--- Replication Log Entries ---");
+                if (logs.isEmpty()) {
+                    System.out.println("(no log entries)");
+                } else {
+                    for (LogEntry entry : logs) {
+                        String operationStr = entry.isDelete() ? "DELETE" : "WRITE";
+                        System.out.println("Log #" + entry.getId() + ": " + operationStr + 
+                                " key='" + entry.getKey() + "'" + 
+                                (entry.isDelete() ? "" : " value='" + entry.getValue() + "'") + 
+                                " (" + new Date(entry.getTimestamp()) + ")");
+                    }
+                }
+            } else if (input.equals("status")) {
+                Map<String, Boolean> nodeStatus = system.getNodesStatus();
+                System.out.println("\n--- Node Status ---");
+                nodeStatus.forEach((nodeId, isUp) -> 
+                        System.out.println(nodeId + ": " + (isUp ? "UP" : "DOWN")));
             } else if (input.startsWith("read ")) {
                 String key = input.substring(5).trim();
                 String value = system.read(key);
@@ -159,7 +186,7 @@ public class Main {
                     System.out.println("Usage: write <key> <value>");
                 }
             } else {
-                System.out.println("Unknown command. Use write, read, delete, show, or exit");
+                System.out.println("Unknown command. Use write, read, delete, show, logs, status, or exit");
             }
         }
 
