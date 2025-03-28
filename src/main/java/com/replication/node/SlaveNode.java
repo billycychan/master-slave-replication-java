@@ -46,24 +46,24 @@ public class SlaveNode extends AbstractNode {
      */
     public void recoverSlave() {
         if (!up || !this.isUp()) {
-            System.out.println("Master " + id + " or Slave " + this.getId() + " is DOWN, cannot recover");
+            System.out.println("Master or Slave " + this.getId() + " is DOWN, cannot recover");
             return;
         }
 
-        System.out.println("Master " + id + " starting recovery for slave " + this.getId());
+        System.out.println("Master starting recovery for slave " + this.getId());
 
         CompletableFuture.runAsync(() -> {
             long slaveLastIndex = this.getLastLogIndex();
-            List<LogEntry> missingEntries = getLogEntriesAfter(slaveLastIndex);
+            List<LogEntry> missingEntries = master.getLogEntriesAfter(slaveLastIndex);
 
-            System.out.println("Master " + id + " sending " + missingEntries.size() +
+            System.out.println("Master sending " + missingEntries.size() +
                     " log entries to slave " + this.getId());
 
             for (LogEntry entry : missingEntries) {
                 this.applyLogEntry(entry, master.lock);
             }
 
-            System.out.println("Master " + id + " completed recovery for slave " +
+            System.out.println("Master completed recovery for slave " +
                     this.getId() + " up to log index " + lastAppliedIndex);
         }, replicationExecutor);
     }
