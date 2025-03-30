@@ -74,12 +74,90 @@ The `Main` class includes a demonstration that:
 3. Simulates node failures and recoveries
 4. Shows the final state of the data store
 
-The system also provides an interactive mode where you can manually:
-- Write data: `write <key> <value>`
-- Read data: `read <key>`
-- Delete data: `delete <key>`
-- Show all data: `show`
-- Exit: `exit`
+### Interactive Mode
+
+The system provides an interactive mode where you can manually:
+- `write <key> <value>`: Create or update a key-value pair
+- `read <key>`: Read the value for a specific key
+- `delete <key>`: Delete a key-value pair
+- `show`: Display all data in the store
+- `logs`: View all replication log entries
+- `status`: Check the status of all nodes (UP/DOWN)
+- `exit`: Exit the application
+
+### Sample Demonstration Session
+
+```
+Starting Master-Slave Replication System with Fault Tolerance
+
+--- Interactive Mode ---
+Commands: write <key> <value> | read <key> | delete <key> | show | logs | status | exit
+> write user1 John
+Write successful
+> write user2 Jane
+Write successful
+> write user3 Bob
+Write successful
+> show
+
+--- Current Data Store ---
+user1 = John
+user2 = Jane
+user3 = Bob
+> read user2
+Jane
+> delete user3
+Delete successful
+> show
+
+--- Current Data Store ---
+user1 = John
+user2 = Jane
+> status
+
+--- Node Status ---
+Master: UP
+Slave-1: UP
+Slave-2: UP
+Slave-3: DOWN
+> logs
+
+--- Replication Log Entries ---
+Log #1: WRITE key='user1' value='John' (Sat Mar 29 19:45:12 EDT 2025)
+Log #2: WRITE key='user2' value='Jane' (Sat Mar 29 19:45:18 EDT 2025)
+Log #3: WRITE key='user3' value='Bob' (Sat Mar 29 19:45:23 EDT 2025)
+Log #4: DELETE key='user3' (Sat Mar 29 19:45:35 EDT 2025)
+> exit
+```
+
+## Project Structure
+
+```
+master-slave-replication/
+├── Dockerfile                 # Docker configuration for containerization
+├── README.md                  # Project documentation
+├── diagrams.md                # System architecture diagrams
+├── pom.xml                    # Maven project configuration
+└── src/
+    └── main/
+        └── java/
+            └── com/
+                └── replication/
+                    ├── Main.java                  # Main application entry point
+                    ├── Test/                      # Test cases
+                    │   ├── FaultToleranceTest.java
+                    │   ├── MainTest.java
+                    │   └── NodeTest.java
+                    ├── model/                     # Data models
+                    │   └── LogEntry.java          # Replication log entry model
+                    ├── node/                      # Node implementations
+                    │   ├── AbstractNode.java      # Common node functionality
+                    │   ├── MasterNode.java        # Master node implementation
+                    │   ├── Node.java              # Node interface
+                    │   └── SlaveNode.java         # Slave node implementation
+                    └── system/                    # System management
+                        └── ReplicationSystem.java # Main replication system
+```
 
 ## Implementation Notes
 
