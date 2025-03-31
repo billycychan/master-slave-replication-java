@@ -58,7 +58,6 @@ public class FaultToleranceTest {
         }
 
         // Stop failure simulation and wait for system to stabilize
-        // (this is a bit of a hack since there's no direct way to stop the simulator)
         system.startFailureSimulator(0.0, 1.0, 1); // Set failure rate to 0, recovery to 100%
         TimeUnit.SECONDS.sleep(5);
 
