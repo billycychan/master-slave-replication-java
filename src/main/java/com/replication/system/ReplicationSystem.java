@@ -101,6 +101,25 @@ public class ReplicationSystem {
     }
 
     /**
+     * get all slave nodes
+     * @return nodes
+     */
+    public List<SlaveNode> getAllUpSlaveNodes(){
+        List<SlaveNode> upSlaves = new ArrayList<>();
+        for (SlaveNode slave : slaves) {
+            if (slave.isUp()) {
+                upSlaves.add(slave);
+            }
+        }
+
+        if (upSlaves.isEmpty()) {
+            return null;
+        }
+
+        return upSlaves;
+    }
+
+    /**
      * Gets the data store of a random slave that is up.
      * @return the data store, or null if all slaves are down
      */

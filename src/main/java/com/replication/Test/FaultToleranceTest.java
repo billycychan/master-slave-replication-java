@@ -1,11 +1,13 @@
 package com.replication.Test;
 
+import com.replication.node.SlaveNode;
 import com.replication.system.ReplicationSystem;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -76,6 +78,14 @@ public class FaultToleranceTest {
 
         // We should have recovered a significant amount of the data
         assertTrue("Too few entries recovered: " + recoveredCount, recoveredCount > 5);
+
+        //get all data from every slave
+        List<SlaveNode> allUpSlaveNodes = system.getAllUpSlaveNodes();
+        for (SlaveNode slaveNode : allUpSlaveNodes) {
+            for (int i = 0; i < 15; i++) {
+                assertEquals(slaveNode.getDataStore().get("failure-key-" + i), "failure-value-" + i);
+            }
+        }
     }
 
     @Test
