@@ -159,7 +159,6 @@ public class ReplicationSystem {
                 slave.goDown();
             } else if (!slave.isUp() && random.nextDouble() < recoveryProbability) {
                 slave.goUp();
-                slave.recoverSlave();
             }
         }
     }
