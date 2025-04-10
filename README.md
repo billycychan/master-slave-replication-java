@@ -34,7 +34,17 @@ Each log entry includes:
 - Operation type (WRITE or DELETE)
 - Timestamp
 
+```
+Log #1: WRITE key='user1' value='John' (2025-03-29 19:45:12)
+```
+
 ## Building and Running
+
+### Requirements
+
+- Java 17 or higher (tested with Java 23)
+- Maven (for build automation)
+- Docker (optional, for container-based execution)
 
 ### Using Maven
 
@@ -159,9 +169,36 @@ master-slave-replication/
                         └── ReplicationSystem.java # Main replication system
 ```
 
+
+---
+
+## System Diagrams
+
+Detailed design diagrams, including class diagrams, state charts, flowcharts, and sequence diagrams, are provided in a separate file:
+
+[Click here to view full system diagrams](./diagrams.md)
+
+These diagrams illustrate:
+
+- Class relationships and system structure
+- Master-slave replication sequence
+- Fault-tolerant recovery flows
+- Data flow across nodes and components
+- State transitions during normal and failure operation
+
+
+
 ## Implementation Notes
 
 - Uses only Java internal libraries as required
 - Designed to be simple and modular
 - Provides a clean API for interacting with the system
 - Includes detailed logging for understanding system behavior
+
+
+## License
+
+This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
+
+
+
