@@ -144,33 +144,35 @@ Log #4: DELETE key='user3' (Sat Mar 29 19:45:35 EDT 2025)
 
 ```
 master-slave-replication/
-├── Dockerfile                 # Docker configuration for containerization
-├── README.md                  # Project documentation
-├── diagrams.md                # System architecture diagrams
-├── pom.xml                    # Maven project configuration
+├── Dockerfile                      # Docker configuration for containerization
+├── README.md                       # Project documentation
+├── diagrams.md                     # System architecture diagrams
+├── pom.xml                         # Maven project configuration
+├── Test_Plan.md                    # Test plan documentation
+├── Test_Report.md                  # Test report documentation
 └── src/
     └── main/
         └── java/
             └── com/
                 └── replication/
-                    ├── Main.java                  # Main application entry point
-                    ├── Test/                      # Test cases
+                    ├── Main.java                 # Main application entry point
+                    ├── Test/                     # Unit test cases
                     │   ├── FaultToleranceTest.java
                     │   ├── MainTest.java
                     │   └── NodeTest.java
-                    ├── model/                     # Data models
-                    │   └── LogEntry.java          # Replication log entry model
-                    ├── node/                      # Node implementations
-                    │   ├── AbstractNode.java      # Common node functionality
-                    │   ├── MasterNode.java        # Master node implementation
-                    │   ├── Node.java              # Node interface
-                    │   └── SlaveNode.java         # Slave node implementation
-                    └── system/                    # System management
+                    ├── model/                    # Data models
+                    │   └── LogEntry.java         # Replication log entry model
+                    ├── node/                     # Node implementations
+                    │   ├── AbstractNode.java     # Common node functionality
+                    │   ├── MasterNode.java       # Master node implementation
+                    │   ├── Node.java             # Node interface
+                    │   └── SlaveNode.java        # Slave node implementation
+                    └── system/                   # System management
                         └── ReplicationSystem.java # Main replication system
 ```
 
 
----
+
 
 ## System Diagrams
 
