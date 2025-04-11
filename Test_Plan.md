@@ -8,11 +8,6 @@ This test plan outlines the strategy, approach, and execution details for testin
 ### Project Background
 The Master-Slave Replication System is a distributed system that implements a leader-follower architecture for data replication. It ensures data consistency across multiple nodes while providing fault tolerance and high availability.
 
-### Intended Audience
-- Development Team
-- Quality Assurance Team
-- System Administrators
-- Project Stakeholders
 
 ## 2. Test Objectives
 
@@ -68,7 +63,6 @@ The Master-Slave Replication System is a distributed system that implements a le
 ### Reference Documents
 - System Architecture Design Document
 - Requirements Specification
-- API Documentation
 - Test Report (test_report.md)
 
 ## 5. Test Types / Levels
@@ -92,7 +86,6 @@ The Master-Slave Replication System is a distributed system that implements a le
 ### Testing Approach
 - **Automated Testing**: Primary testing method using JUnit
 - **Manual Testing**: Supplementary testing for complex scenarios
-- **Continuous Integration**: Automated test execution on code changes
 
 ## 6. Test Strategy
 
@@ -100,14 +93,13 @@ The Master-Slave Replication System is a distributed system that implements a le
 - Test-driven development methodology
 - Incremental testing approach
 - Risk-based testing prioritization
-- Continuous integration and testing
 
 ### Tools and Techniques
 - **Testing Framework**: JUnit 4.13.2
 - **Code Coverage**: Manual code review
-- **Test Management**: Version control system
-- **Build System**: Maven/Gradle
-- **CI/CD**: Jenkins/GitHub Actions
+- **Test Management**: Version control system(GIT)
+- **Build System**: Maven
+
 
 ## 7. Test Environment
 
@@ -117,18 +109,14 @@ The Master-Slave Replication System is a distributed system that implements a le
 - 10GB free disk space
 
 ### Software Requirements
-- Java 8 or higher
+- Java 21
 - JUnit 4.13.2
-- Maven/Gradle
+- Maven
 - Git
 
-### Network Configuration
-- Local network for node communication
-- Simulated network conditions for testing
 
 ### Dependencies
 - JUnit libraries
-- Hamcrest core library
 - Java standard library
 
 ## 8. Test Schedule
